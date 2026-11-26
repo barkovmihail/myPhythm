@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
+import { Analytics } from '@vercel/analytics/react'
 import { ArrowDown, ArrowRight, ArrowUpRight, Bookmark, Check, Mail, RefreshCw, ShoppingBasket } from 'lucide-react'
-import { validEmail } from '../server/email.mjs'
+import { normalizeEmail } from '../server/email.mjs'
 import '@fontsource/manrope/cyrillic-400.css'
 import '@fontsource/manrope/cyrillic-600.css'
 import '@fontsource/manrope/latin-400.css'
@@ -42,9 +43,15 @@ function DinnerCard() {
   const [option, setOption] = useState(0)
   const [saved, setSaved] = useState([false, false])
   const meal = meals[option]
+  const isSaved = saved[option]
+
+  function saveMeal() {
+    setSaved(previous => previous.map((value, index) => index === option || value))
+  }
+
   return <div className="conversation">
     <div className="card-title">Пример рекомендации</div>
-    <p className="message" id="dinner-question" tabIndex={-1}>Устал. Дома есть готовая гречка. Что взять по дороге на ужин? Хочется чего-нибудь горячего.</p>
+    <p className="message">Устал. Дома есть готовая гречка. Что взять по дороге на ужин? Хочется чего-нибудь горячего.</p>
     <div className="assistant-name"><img src="/bloom.svg" alt="" />My Rhythm</div>
     <div aria-live="polite" aria-atomic="true">
       <div className="meal-reply" key={option}>
@@ -53,10 +60,12 @@ function DinnerCard() {
       </div>
     </div>
     <div className="demo-actions">
-      <button className="button compact" disabled={saved[option]} onClick={() => setSaved(previous => previous.map((value, index) => index === option || value))}>{saved[option] ? <Check /> : <Bookmark />}{saved[option] ? 'Ужин сохранён' : 'Сохранить ужин'}</button>
+      <button className="button compact" disabled={isSaved} onClick={saveMeal}>
+        {isSaved ? <><Check />Ужин сохранён</> : <><Bookmark />Сохранить ужин</>}
+      </button>
       <button className="plain-link" onClick={() => setOption(previous => 1 - previous)}><RefreshCw />{option ? 'Вернуться к первому варианту' : 'Сегодня без готовки'}</button>
     </div>
-    <div role="status">{saved[option] && <p className="saved">В этом примере ужин добавлен в подборку «На поздний вечер».</p>}</div>
+    <div role="status">{isSaved && <p className="saved">В этом примере ужин добавлен в подборку «На поздний вечер».</p>}</div>
   </div>
 }
 
@@ -65,7 +74,7 @@ function Example() {
     <div className="wrap demo-grid">
       <div className="section-intro">
         <div className="eyebrow"><span className="marker" />Как это работает</div>
-        <h2>Представь, что ты заходишь в магазин <em>после работы</em></h2>
+        <h2 id="dinner-question" tabIndex={-1}>Представь, что ты заходишь в магазин <em>после работы</em></h2>
         <p>До дома полчаса. В холодильнике осталась гречка, а на готовку есть минут десять. Попробуй выбрать ужин на этот вечер.</p>
       </div>
       <DinnerCard />
@@ -106,12 +115,14 @@ function SignupForm() {
   const input = useRef(null)
   const [status, setStatus] = useState('idle')
   const error = signupErrors[status]
+  const isSending = status === 'sending'
+
   async function submit(event) {
     event.preventDefault()
-    if (status === 'sending') return
-    const address = input.current.value.trim()
-    if (!validEmail(address) || input.current.validity.typeMismatch) {
-      setStatus(address ? 'invalid' : 'empty')
+    if (isSending) return
+    const address = normalizeEmail(input.current.value)
+    if (!address) {
+      setStatus(input.current.value.trim() ? 'invalid' : 'empty')
       input.current.focus()
       return
     }
@@ -133,10 +144,10 @@ function SignupForm() {
   return <form onSubmit={submit} noValidate><label htmlFor="email">Электронная почта</label>
     <div className="field-row"><div className="field"><Mail size={18} />
       <input type="email" id="email" name="email" required autoComplete="email" spellCheck={false}
-        maxLength={254} placeholder="name@example.com" ref={input} readOnly={status === 'sending'}
+        placeholder="name@example.com" ref={input} readOnly={isSending}
         onChange={error ? () => setStatus('idle') : undefined} aria-invalid={status === 'empty' || status === 'invalid'}
         aria-describedby={error ? 'form-error' : 'form-note'} /></div>
-    <button className="button" disabled={status === 'sending'}>{status === 'sending' ? 'Отправляем…' : 'Получить ранний доступ'}<ArrowRight /></button></div>
+    <button className="button" disabled={isSending}>{isSending ? 'Отправляем…' : 'Получить ранний доступ'}<ArrowRight /></button></div>
     {error && <p className="form-error" id="form-error" role="alert">{error}</p>}<small id="form-note">Используем почту, чтобы прислать приглашение в My Rhythm.</small></form>
 }
 
@@ -153,7 +164,9 @@ function App() {
   return <div id="top"><a className="skip-link" href="#main-content">К основному содержимому</a>
     <header className="wrap"><Brand /><nav aria-label="Основная навигация"><a href="#example">Как это работает</a><a href="#manifesto">Манифест</a><a className="nav-cta" href="#access">Ранний доступ <ArrowUpRight /></a></nav></header>
     <main id="main-content" tabIndex={-1}><Hero /><Example /><Features /><Manifesto /><Access /></main>
-    <footer className="wrap"><Brand /><a className="plain-link" href="#top">Наверх ↑</a></footer></div>
+    <footer className="wrap"><Brand /><a className="plain-link" href="#top">Наверх ↑</a></footer>
+    <Analytics />
+  </div>
 }
 
 createRoot(document.getElementById('root')).render(<App />)

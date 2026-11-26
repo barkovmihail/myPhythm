@@ -1,17 +1,21 @@
 import { mkdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
-import { validEmail } from './email.mjs'
+import { normalizeEmail } from './email.mjs'
 
-let database
-function register(email) {
-  if (!database) {
-    const directory = resolve(process.env.RHYTHM_DATA_DIR || '.data')
-    mkdirSync(directory, { recursive: true })
-    database = new DatabaseSync(resolve(directory, 'early-access.sqlite'))
+let insertSignup
+
+function prepareSignup() {
+  const directory = resolve(process.env.RHYTHM_DATA_DIR || '.data')
+  mkdirSync(directory, { recursive: true })
+  const database = new DatabaseSync(resolve(directory, 'early-access.sqlite'))
+  try {
     database.exec('CREATE TABLE IF NOT EXISTS signups (email TEXT PRIMARY KEY)')
+    return database.prepare('INSERT INTO signups (email) VALUES (?) ON CONFLICT(email) DO NOTHING')
+  } catch (error) {
+    database.close()
+    throw error
   }
-  database.prepare('INSERT INTO signups (email) VALUES (?) ON CONFLICT(email) DO NOTHING').run(email)
 }
 
 function reply(response, status, ok) {
@@ -32,9 +36,10 @@ export async function signup(request, response, next) {
       chunks.push(chunk)
     }
     const payload = JSON.parse(Buffer.concat(chunks).toString('utf8'))
-    const email = typeof payload?.email === 'string' ? payload.email.trim().toLowerCase() : ''
-    if (!validEmail(email)) return reply(response, 422, false)
-    register(email)
+    const email = normalizeEmail(payload?.email)
+    if (!email) return reply(response, 422, false)
+    insertSignup ??= prepareSignup()
+    insertSignup.run(email)
     reply(response, 200, true)
   } catch (error) {
     reply(response, error instanceof SyntaxError ? 400 : 500, false)

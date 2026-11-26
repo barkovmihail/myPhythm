@@ -23,9 +23,9 @@ Use ES modules, two-space indentation, single-quoted JavaScript strings, and no 
 
 ## Testing
 
-Follow the acceptance scenario in `docs/SPEC.md` at 360, 768, and 1440 px. Check keyboard navigation, meal switching and saving, invalid emails, retry after network failure, and duplicate signups. No coverage threshold or `npm test` script is configured.
+Run `npm ci` and `npx playwright install --with-deps --only-shell chromium` after cloning. Run `npm test` to build the app and run the tracked Playwright tests in `tests/` against a preview server with an isolated SQLite database. They cover email validation in the form and API, duplicate signups, and keyboard navigation to the example heading at 360, 768, and 1440 px.
 
-This workspace includes a Git-ignored Playwright check in `.qa/check.mjs`. With its local `playwright-core` dependency and Chrome installed, start a QA server in PowerShell:
+For the additional acceptance scenarios in `docs/SPEC.md`, check meal switching and saving and retry after network failure. In workspaces with the optional Git-ignored `.qa/check.mjs`, its local `playwright-core` dependency and Chrome, start a QA server in PowerShell:
 
 ```powershell
 $env:RHYTHM_DATA_DIR = '.qa/data'

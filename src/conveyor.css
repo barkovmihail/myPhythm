@@ -1,0 +1,32 @@
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities) source(none);
+@source "./components/ui";
+
+@theme {
+  --color-background: #f1f1e7;
+  --color-foreground: #283c32;
+  --color-card: #fffcf5;
+  --color-card-foreground: #283c32;
+  --color-muted: #e3e7db;
+  --color-muted-foreground: #525d55;
+  --color-border: #c6cbbd;
+  --color-ring: #a44833;
+  --color-chart-1: #617c58;
+  --color-chart-2: #a44833;
+  --color-chart-3: #977333;
+  --color-chart-4: #81728b;
+  --color-chart-5: #567785;
+}
+
+@layer base {
+  :where([data-slot="sushi-conveyor-menu"], [data-dish-dialog]) :where(button, p, h2, h3, ul) {
+    margin: 0;
+    padding: 0;
+    border: 0 solid;
+    background: transparent;
+    color: inherit;
+  }
+  :where([data-slot="sushi-conveyor-menu"], [data-dish-dialog]) :where(div, span, li) { border: 0 solid; }
+  :where([data-slot="sushi-conveyor-menu"], [data-dish-dialog]) ul { list-style: none; }
+}
